@@ -81,6 +81,7 @@ Modo: ${reprocessarTudo ? 'Reprocessar TODOS' : 'Apenas semana atual'}`;
     let totalRegistrosDeletados = 0;
     let arquivosProcessadosComSucesso = 0;
     let arquivosComErro = 0;
+    let arquivosVazios = 0;
     
     for (const arquivo of arquivos) {
         console.log(`Processando arquivo: ${arquivo}`);
@@ -96,6 +97,39 @@ Modo: ${reprocessarTudo ? 'Reprocessar TODOS' : 'Apenas semana atual'}`;
                 .on('end', resolve)
                 .on('error', reject);
         });
+        
+        if (resultados.length === 0) {
+            console.log(`AVISO: Arquivo ${arquivo} esta vazio (sem dados).`);
+            arquivosVazios++;
+            
+            if (arquivo.startsWith(prefixoSemana)) {
+                const nomeServidor = arquivo.replace(prefixoSemana + '_', '').replace('_aplicativos.csv', '');
+                const partes = nomeServidor.split('_');
+                const servidor = partes.slice(2).join('_');
+                
+                const retryQueue = JSON.parse(fs.readFileSync(path.join(__dirname, 'retry_queue.json'), 'utf-8'));
+                const jaExiste = retryQueue.find(item => item.servidor === servidor && item.semana === prefixoSemana);
+                
+                if (!jaExiste) {
+                    retryQueue.push({
+                        servidor: servidor,
+                        arquivo: arquivo,
+                        semana: prefixoSemana,
+                        tentativas: 0,
+                        adicionadoEm: new Date().toISOString()
+                    });
+                    fs.writeFileSync(path.join(__dirname, 'retry_queue.json'), JSON.stringify(retryQueue, null, 2));
+                    console.log(`Servidor ${servidor} adicionado a fila de retry (semana atual).`);
+                    await notificar('bot-ksc-db_sync', `AVISO: Arquivo vazio detectado da SEMANA ATUAL\n\nArquivo: ${arquivo}\nServidor: ${servidor}\nAcao: Adicionado a fila de retry (tentativa em 15 minutos)`, 'INFO');
+                } else {
+                    await notificar('bot-ksc-db_sync', `AVISO: Arquivo vazio detectado\n\nArquivo: ${arquivo}\nStatus: Sem dados para processar\nAcao: Arquivo ignorado (ja na fila de retry)`, 'INFO');
+                }
+            } else {
+                await notificar('bot-ksc-db_sync', `AVISO: Arquivo vazio detectado de SEMANA ANTERIOR\n\nArquivo: ${arquivo}\nStatus: Sem dados para processar\nAcao: Arquivo ignorado (nao e da semana atual)`, 'INFO');
+            }
+            
+            continue;
+        }
 
         await client.query('BEGIN');
 
@@ -148,6 +182,7 @@ Semana: ${prefixoSemana}
 ARQUIVOS:
 - Total encontrado: ${arquivos.length}
 - Processados com sucesso: ${arquivosProcessadosComSucesso}
+- Vazios (sem dados): ${arquivosVazios}
 - Com erro: ${arquivosComErro}
 
 REGISTROS:
@@ -156,6 +191,10 @@ REGISTROS:
 - Total no banco: ${totalRegistrosInseridos}`;
     
     await notificar('bot-ksc-db_sync', analytics, 'SUCESSO');
+    
+    console.log('Coletando metricas do banco...');
+    const { enviarMetricas } = require('./db_metrics');
+    await enviarMetricas();
 }
 
 processarCSVs().catch(async (erro) => {

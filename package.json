@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "metrics": "node db_metrics.js",
+    "scraper-single": "node scraper_single.js"
   },
   "keywords": [],
   "author": "",

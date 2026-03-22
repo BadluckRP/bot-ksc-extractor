@@ -57,7 +57,28 @@ node db_sync.js
 
 ## Uso
 
-### Extração
+### Scraper Individual (Um Servidor Específico)
+
+Busca e baixa o relatório de apenas um servidor:
+
+```bash
+node scraper_single.js "NOME_DO_SERVIDOR"
+```
+
+**Exemplos:**
+```bash
+node scraper_single.js "pdaw-airwb01"
+node scraper_single.js "SRVBILDWEB01"
+```
+
+**Características:**
+- Busca automática em Linux e Windows
+- Para no primeiro servidor encontrado
+- Valida se arquivo contém dados
+- Notificações detalhadas de cada etapa
+- Ideal para reprocessamento ou verificação pontual
+
+### Extração Completa (Todos os Servidores)
 ```bash
 node scraper.js
 ```
@@ -176,7 +197,8 @@ Semana: 3_16_2026-3_23_2026
 
 ARQUIVOS:
 - Total encontrado: 5
-- Processados com sucesso: 5
+- Processados com sucesso: 4
+- Vazios (sem dados): 1
 - Com erro: 0
 
 REGISTROS:
@@ -190,3 +212,74 @@ REGISTROS:
 ### Desabilitar Notificações
 
 Deixe `X_API_KEY` vazio no `.env`. O sistema continuará funcionando normalmente com logs locais.
+
+## Sistema de Retry Automático
+
+O sistema detecta automaticamente arquivos CSV vazios **da semana atual** e tenta reprocessá-los após 15 minutos.
+
+### Como Funciona
+
+1. **db_sync** detecta arquivo vazio da semana atual
+2. Servidor é adicionado à fila de retry (`retry_queue.json`)
+3. A cada **15 minutos**, o sistema tenta reprocessar
+4. Usa `scraper_single.js` para baixar apenas aquele servidor
+5. **Apenas 1 tentativa** por servidor
+6. Se falhar, será tentado novamente no próximo dia
+
+### Proteções
+
+- ✅ **Apenas semana atual**: arquivos de semanas anteriores são ignorados
+- ✅ **Limite de tentativas**: máximo 1 retry por servidor
+- ✅ **Sem duplicatas**: não adiciona servidor já na fila
+- ✅ **Notificações detalhadas**: informa sucesso ou falha
+
+### Arquivos
+
+- `retry_queue.json`: fila de servidores para retry
+- `retry_empty_files.js`: processa fila automaticamente
+
+### Uso no Windows Host
+
+O sistema de retry **funciona perfeitamente no Windows**:
+
+**Executar manualmente:**
+```powershell
+node retry_empty_files.js
+```
+
+**Agendar com Task Scheduler:**
+- Criar tarefa que executa `node retry_empty_files.js`
+- Repetir a cada 15 minutos
+- Iniciar em: `C:\Desenvolvimento\Infra\bot-ksc-extractor`
+
+**Notificações:**
+- ✅ Quando servidor entra na fila (imediato)
+- ✅ Quando retry inicia (a cada 15 min)
+- ✅ Resultado de cada tentativa
+
+Ver documentação completa em `rag_docs/retry-windows.md`
+
+## Métricas do Banco de Dados
+
+As métricas são **enviadas automaticamente** após cada sincronização bem-sucedida do `db_sync.js`.
+
+### Executar Métricas Manualmente
+
+Você também pode consultar métricas detalhadas do banco a qualquer momento:
+
+```powershell
+node db_metrics.js
+```
+
+**Informações fornecidas:**
+- Total de registros (ativos vs soft-deleted com percentuais)
+- Tamanho da tabela em disco (formatado automaticamente em MB/GB)
+- Total de arquivos CSV fonte
+- Distribuição por sistema operacional
+- Histórico de atualizações da última semana
+- Data/hora da última atualização
+
+**No Docker:**
+```bash
+docker exec -it bot_ksc_playwright node db_metrics.js
+```

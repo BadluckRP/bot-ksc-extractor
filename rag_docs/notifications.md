@@ -73,6 +73,23 @@ notificar(processo, mensagem, tipo)
 - Sucesso na extração
 - Erro fatal no scraper
 
+### bot-ksc-scraper-single
+- Início da busca com nome do servidor
+- Login no KSC
+- Acesso ao workspace
+- Início da procura em Linux e Windows
+- Servidor encontrado (nome e categoria)
+- Download iniciado
+- Sucesso com validação de dados:
+  - Nome do servidor
+  - Categoria encontrada
+  - Nome do arquivo
+  - Quantidade de linhas de dados
+  - Status (válido ou vazio)
+- Aviso se arquivo está vazio
+- Erro se servidor não encontrado
+- Erro fatal no processo
+
 ### bot-ksc-db_sync
 - Início da sincronização com informações detalhadas:
   - Database e host
@@ -80,12 +97,33 @@ notificar(processo, mensagem, tipo)
   - Semana de referência
   - Modo de processamento
 - Contagem de arquivos encontrados
+- Avisos de arquivos vazios (sem dados para processar)
 - Erros individuais por arquivo (se houver)
 - Sucesso final com analytics completos:
-  - Total de arquivos processados/com erro
+  - Total de arquivos processados/vazios/com erro
   - Total de registros inseridos
   - Total de registros soft-deleted
   - Resumo da operação
+
+### bot-ksc-db_metrics
+- Métricas completas do banco de dados (executável independentemente):
+  - Total de registros (ativos vs soft-deleted com percentuais)
+  - Tamanho da tabela (total, dados, índices em KB/MB/GB)
+  - Total de arquivos CSV fonte
+  - Média de registros por arquivo
+  - Distribuição por sistema operacional (Linux/Windows)
+  - Histórico de atualizações da última semana (dia, quantidade, horários)
+  - Data/hora da última atualização
+  - Data/hora do último registro criado
+
+### bot-ksc-retry
+- Início do processamento de retry com contagem de servidores
+- Tentativa de reprocessamento individual (servidor, tentativa N/1)
+- Retry bem-sucedido (arquivo, linhas de dados)
+- Retry falhou - tentativas esgotadas
+- Retry falhou - arquivo não encontrado
+- Retry falhou - erro no scraper
+- Fila atualizada com servidores restantes
 
 ## Configuração
 
