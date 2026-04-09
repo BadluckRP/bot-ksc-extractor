@@ -22,8 +22,7 @@ async function processarFilaRetry() {
     const retryQueuePath = path.join(__dirname, 'retry_queue.json');
     const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     
-    console.log(`[${timestamp}] Sistema de retry iniciado`);
-    await notificar('bot-ksc-retry', `Sistema de retry iniciado\n\nHorario: ${timestamp}\nVerificando fila de servidores vazios...`, 'INFO');
+    console.log(`[${timestamp}] Sistema de retry verificando fila...`);
     
     if (!fs.existsSync(retryQueuePath)) {
         console.log('Fila de retry vazia ou nao existe.');

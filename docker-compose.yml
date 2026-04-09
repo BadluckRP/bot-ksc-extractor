@@ -1,6 +1,6 @@
 services:
   playwright-bot:
-    image: mcr.microsoft.com/playwright:v1.42.0-jammy
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
     container_name: bot_ksc_playwright
     working_dir: /app
     volumes:
